@@ -1,0 +1,10 @@
+*.class
+*.tasty
+.metals
+.bloop
+.bsp
+.scala-build
+.sbt
+out
+.mcp.json
+*.log

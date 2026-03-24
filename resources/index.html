@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Scala Native binary size visualiser</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+        <script src="raw.js"></script>
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            :root {
+                --color-background-primary: #ffffff;
+                --color-background-secondary: #f5f5f3;
+                --color-text-primary: #1a1a18;
+                --color-text-secondary: #5f5e5a;
+                --color-border-tertiary: rgba(0, 0, 0, 0.15);
+                --color-border-secondary: rgba(0, 0, 0, 0.3);
+                --font-mono: "JetBrains Mono", "Fira Mono", monospace;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --color-background-primary: #1e1e1c;
+                    --color-background-secondary: #2a2a28;
+                    --color-text-primary: #f0ede6;
+                    --color-text-secondary: #b4b2a9;
+                    --color-border-tertiary: rgba(255, 255, 255, 0.15);
+                    --color-border-secondary: rgba(255, 255, 255, 0.3);
+                }
+            }
+            body {
+                font-family: var(--font-mono);
+                background: var(--color-background-secondary);
+                color: var(--color-text-primary);
+                padding: 1.5rem;
+                min-height: 100vh;
+            }
+            h1 {
+                font-size: 15px;
+                font-weight: 500;
+                margin-bottom: 1rem;
+                color: var(--color-text-secondary);
+                letter-spacing: 0.05em;
+                text-transform: lowercase;
+            }
+            #controls {
+                display: flex;
+                gap: 16px;
+                align-items: center;
+                padding: 0 0 0.75rem;
+                flex-wrap: wrap;
+            }
+            #controls label {
+                font-size: 12px;
+                color: var(--color-text-secondary);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            input[type="range"] {
+                width: 100px;
+                accent-color: #378add;
+            }
+            #depth-out,
+            #minsize-out {
+                font-size: 12px;
+                font-weight: 500;
+                min-width: 40px;
+                color: var(--color-text-primary);
+            }
+            #breadcrumb {
+                font-size: 12px;
+                color: var(--color-text-secondary);
+                padding: 0 0 0.5rem;
+                min-height: 1.5rem;
+            }
+            #breadcrumb span {
+                cursor: pointer;
+                color: #378add;
+            }
+            #breadcrumb span:hover {
+                text-decoration: underline;
+            }
+            #treemap-wrap {
+                position: relative;
+                width: 100%;
+            }
+            #tooltip {
+                position: absolute;
+                pointer-events: none;
+                display: none;
+                background: var(--color-background-primary);
+                border: 0.5px solid var(--color-border-secondary);
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 12px;
+                max-width: 320px;
+                color: var(--color-text-primary);
+                z-index: 10;
+                font-family: var(--font-mono);
+            }
+            #tooltip .tt-name {
+                font-weight: 500;
+                margin-bottom: 2px;
+                word-break: break-all;
+            }
+            #tooltip .tt-size {
+                color: var(--color-text-secondary);
+            }
+            svg text {
+                font-family: var(--font-mono);
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Scala Native binary size visualiser</h1>
+        <h2 id="filename"></h2>
+        <div id="controls">
+            <label
+                >depth
+                <input
+                    type="range"
+                    id="depth"
+                    min="1"
+                    max="6"
+                    value="3"
+                    step="1"
+                />
+                <span id="depth-out">3</span></label
+            >
+            <label
+                >min size
+                <input
+                    type="range"
+                    id="minsize"
+                    min="0"
+                    max="23736"
+                    value="500"
+                    step="500"
+                />
+                <span id="minsize-out">500</span></label
+            >
+        </div>
+        <div id="breadcrumb"></div>
+        <div id="treemap-wrap">
+            <svg id="tm"></svg>
+            <div id="tooltip"></div>
+        </div>
+
+        <script>
+            document.getElementById("filename").innerText = FILENAME;
+            const RAMPS = [
+                [
+                    "#E6F1FB",
+                    "#B5D4F4",
+                    "#85B7EB",
+                    "#378ADD",
+                    "#185FA5",
+                    "#0C447C",
+                    "#042C53",
+                ],
+                [
+                    "#E1F5EE",
+                    "#9FE1CB",
+                    "#5DCAA5",
+                    "#1D9E75",
+                    "#0F6E56",
+                    "#085041",
+                    "#04342C",
+                ],
+                [
+                    "#EEEDFE",
+                    "#CECBF6",
+                    "#AFA9EC",
+                    "#7F77DD",
+                    "#534AB7",
+                    "#3C3489",
+                    "#26215C",
+                ],
+                [
+                    "#FAEEDA",
+                    "#FAC775",
+                    "#EF9F27",
+                    "#BA7517",
+                    "#854F0B",
+                    "#633806",
+                    "#412402",
+                ],
+                [
+                    "#FAECE7",
+                    "#F5C4B3",
+                    "#F0997B",
+                    "#D85A30",
+                    "#993C1D",
+                    "#712B13",
+                    "#4A1B0C",
+                ],
+                [
+                    "#EAF3DE",
+                    "#C0DD97",
+                    "#97C459",
+                    "#639922",
+                    "#3B6D11",
+                    "#27500A",
+                    "#173404",
+                ],
+            ];
+
+            function fmtBytes(b) {
+                if (b >= 1048576) return (b / 1048576).toFixed(1) + "M";
+                if (b >= 1024) return (b / 1024).toFixed(1) + "K";
+                return b + " B";
+            }
+
+            function buildTree(symbols, maxDepth, minSize) {
+                const root = { name: "root", children: {}, size: 0 };
+                for (const [sym, size] of symbols) {
+                    const dotPart = sym.replace(/\(.*/, "");
+                    const parts = dotPart.split(".").slice(0, maxDepth);
+                    let node = root;
+                    for (let i = 0; i < parts.length; i++) {
+                        const p = parts[i];
+                        if (!node.children[p])
+                            node.children[p] = {
+                                name: p,
+                                children: {},
+                                size: 0,
+                                fullPath: parts.slice(0, i + 1).join("."),
+                            };
+                        node = node.children[p];
+                    }
+                    node.size += size;
+                    let n = root;
+                    for (const p of parts) {
+                        n.size += size;
+                        n = n.children[p];
+                    }
+                }
+                function toHier(node, depth) {
+                    const ch = Object.values(node.children)
+                        .filter((c) => c.size >= minSize)
+                        .map((c) => toHier(c, depth + 1));
+                    if (ch.length)
+                        return {
+                            name: node.name,
+                            children: ch,
+                            value: 0,
+                            fullPath: node.fullPath,
+                            totalSize: node.size,
+                        };
+                    return {
+                        name: node.name,
+                        value: node.size,
+                        fullPath: node.fullPath,
+                        totalSize: node.size,
+                    };
+                }
+                return {
+                    name: "root",
+                    children: Object.values(root.children)
+                        .filter((c) => c.size >= minSize)
+                        .map((c) => toHier(c, 0)),
+                    totalSize: root.size,
+                };
+            }
+
+            let focusNode = null;
+
+            function render() {
+                const maxDepth = +document.getElementById("depth").value;
+                const minSize = +document.getElementById("minsize").value;
+                document.getElementById("depth-out").textContent = maxDepth;
+                document.getElementById("minsize-out").textContent =
+                    fmtBytes(minSize);
+
+                const wrap = document.getElementById("treemap-wrap");
+                const W = wrap.clientWidth || 700;
+                const H = Math.max(400, Math.round(W * 0.6));
+                const svg = d3.select("#tm").attr("width", W).attr("height", H);
+                svg.selectAll("*").remove();
+
+                const tree = buildTree(RAW, maxDepth, minSize);
+                let rootNode = tree;
+                if (focusNode) {
+                    const path = (focusNode.fullPath || focusNode.name).split(
+                        ".",
+                    );
+                    const prefix = path.join(".") + ".";
+                    const filtered = RAW.filter(([sym]) => {
+                        const dot = sym.replace(/\(.*/, "");
+                        return dot === path.join(".") || dot.startsWith(prefix);
+                    });
+                    if (filtered.length > 0) {
+                        const sub = buildTree(
+                            filtered,
+                            maxDepth + path.length,
+                            0,
+                        );
+                        // navigate into the sub-tree at the focus path
+                        let n = sub;
+                        for (const p of path) {
+                            const ch = (n.children || []).find(
+                                (c) => c.name === p,
+                            );
+                            if (!ch) break;
+                            n = ch;
+                        }
+                        rootNode = n;
+                    }
+                }
+                const hier = d3
+                    .hierarchy(rootNode)
+                    .sum((d) => d.value || 0)
+                    .sort((a, b) => b.value - a.value);
+
+                d3
+                    .treemap()
+                    .size([W, H])
+                    .paddingInner(2)
+                    .paddingTop(18)
+                    .paddingOuter(3)
+                    .round(true)(hier);
+
+                const topPkgs = [
+                    ...new Set(
+                        hier.leaves().map((d) => {
+                            let n = d;
+                            while (n.depth > 1 && n.parent) n = n.parent;
+                            return n.data.name;
+                        }),
+                    ),
+                ];
+                const colorMap = {};
+                topPkgs.forEach(
+                    (p, i) => (colorMap[p] = RAMPS[i % RAMPS.length]),
+                );
+
+                function getColor(d, lightIdx) {
+                    let n = d;
+                    while (n.depth > 1 && n.parent) n = n.parent;
+                    const ramp = colorMap[n.data.name] || RAMPS[0];
+                    const depthRatio = Math.min(d.depth / (maxDepth + 1), 1);
+                    const idx = Math.round(depthRatio * (ramp.length - 1));
+                    return ramp[lightIdx !== undefined ? lightIdx : idx];
+                }
+
+                const cell = svg
+                    .selectAll("g")
+                    .data(hier.descendants().filter((d) => d.depth > 0))
+                    .enter()
+                    .append("g")
+                    .attr("transform", (d) => `translate(${d.x0},${d.y0})`);
+
+                cell.append("rect")
+                    .attr("width", (d) => Math.max(0, d.x1 - d.x0))
+                    .attr("height", (d) => Math.max(0, d.y1 - d.y0))
+                    .attr("fill", (d) => getColor(d, d.children ? 1 : 2))
+                    .attr("stroke", (d) => getColor(d, 4))
+                    .attr("stroke-width", 0.5)
+                    .style("cursor", "pointer")
+                    .on("click", (e, d) => {
+                        // ensure fullPath is set even on synthetic root nodes
+                        if (!d.data.fullPath) d.data.fullPath = d.data.name;
+                        focusNode = d.data;
+                        updateBreadcrumb();
+                        render();
+                    })
+                    .on("mousemove", (e, d) => {
+                        const tt = document.getElementById("tooltip");
+                        const rect = wrap.getBoundingClientRect();
+                        tt.style.display = "block";
+                        tt.style.left = e.clientX - rect.left + 12 + "px";
+                        tt.style.top = e.clientY - rect.top - 10 + "px";
+                        tt.innerHTML = `<div class="tt-name">${d.data.fullPath || d.data.name}</div><div class="tt-size">${fmtBytes(d.data.totalSize || d.data.value || 0)}</div>`;
+                    })
+                    .on("mouseleave", () => {
+                        document.getElementById("tooltip").style.display =
+                            "none";
+                    });
+
+                const labelCells = cell.filter(
+                    (d) => d.x1 - d.x0 > 40 && d.y1 - d.y0 > 18,
+                );
+
+                labelCells
+                    .append("text")
+                    .attr("x", 5)
+                    .attr("y", (d) =>
+                        d.children ? 15 : Math.min(17, (d.y1 - d.y0) / 2 + 4),
+                    )
+                    .attr("font-size", (d) => (d.children ? 13 : 12))
+                    .attr("font-weight", (d) => (d.children ? 600 : 400))
+                    .attr("fill", (d) => getColor(d, 6))
+                    .attr("pointer-events", "none")
+                    .text((d) => {
+                        const w = d.x1 - d.x0;
+                        const label = d.data.name;
+                        const maxChars = Math.floor(w / 7.5);
+                        return label.length > maxChars
+                            ? label.slice(0, maxChars - 1) + "…"
+                            : label;
+                    });
+
+                labelCells
+                    .filter((d) => d.children && d.y1 - d.y0 > 32)
+                    .append("text")
+                    .attr("x", 5)
+                    .attr("y", 28)
+                    .attr("font-size", 11)
+                    .attr("fill", (d) => getColor(d, 5))
+                    .attr("pointer-events", "none")
+                    .text((d) =>
+                        fmtBytes(d.data.totalSize || d.data.value || 0),
+                    );
+
+                labelCells
+                    .filter((d) => !d.children && d.y1 - d.y0 > 32)
+                    .append("text")
+                    .attr("x", 5)
+                    .attr("y", (d) => Math.min(30, (d.y1 - d.y0) / 2 + 18))
+                    .attr("font-size", 11)
+                    .attr("fill", (d) => getColor(d, 5))
+                    .attr("pointer-events", "none")
+                    .text((d) =>
+                        fmtBytes(d.data.totalSize || d.data.value || 0),
+                    );
+            }
+
+            function updateBreadcrumb() {
+                const bc = document.getElementById("breadcrumb");
+                if (!focusNode || focusNode.name === "root") {
+                    bc.innerHTML = "";
+                    return;
+                }
+                bc.innerHTML =
+                    '<span onclick="focusNode=null;updateBreadcrumb();render()">root</span> / ' +
+                    (focusNode.fullPath || focusNode.name)
+                        .split(".")
+                        .map((p, i, arr) => {
+                            const path = arr.slice(0, i + 1).join(".");
+                            if (i === arr.length - 1)
+                                return `<strong>${p}</strong>`;
+                            return `<span onclick="focusToPath('${path}')">${p}</span>`;
+                        })
+                        .join(" / ");
+            }
+
+            window.focusToPath = function (path) {
+                function find(node, parts) {
+                    if (!parts.length) return node;
+                    const ch = (node.children || []).find(
+                        (c) => c.name === parts[0],
+                    );
+                    return ch ? find(ch, parts.slice(1)) : null;
+                }
+                const tree = buildTree(
+                    RAW,
+                    +document.getElementById("depth").value,
+                    +document.getElementById("minsize").value,
+                );
+                const found = find(tree, path.split("."));
+                if (found) {
+                    focusNode = found;
+                    updateBreadcrumb();
+                    render();
+                }
+            };
+
+            document.getElementById("depth").oninput = render;
+            document.getElementById("minsize").oninput = render;
+            render();
+            window.addEventListener("resize", render);
+        </script>
+    </body>
+</html>
