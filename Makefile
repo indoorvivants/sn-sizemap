@@ -36,13 +36,13 @@ install: bin
 	echo "This command will be run with sudo, so your password may be required"
 	sudo install -m 755 out/release/sn-sizemap /usr/local/bin/sn-sizemap
 
-# publish-snapshot:
-# 	scala-cli config publish.credentials central.sonatype.com env:SONATYPE_USERNAME env:SONATYPE_PASSWORD
-# 	scala-cli config publish.credentials ossrh-staging-api.central.sonatype.com env:SONATYPE_USERNAME env:SONATYPE_PASSWORD
-# 	scala-cli publish . --signer none
+publish-snapshot:
+	scala-cli config publish.credentials central.sonatype.com env:SONATYPE_USERNAME env:SONATYPE_PASSWORD
+	scala-cli config publish.credentials ossrh-staging-api.central.sonatype.com env:SONATYPE_USERNAME env:SONATYPE_PASSWORD
+	scala-cli publish . --signer none
 
-# publish:
-# 	scala-cli config publish.credentials central.sonatype.com env:SONATYPE_USERNAME env:SONATYPE_PASSWORD
-# 	scala-cli config publish.credentials ossrh-staging-api.central.sonatype.com env:SONATYPE_USERNAME env:SONATYPE_PASSWORD
-# 	./.github/workflows/import-gpg.sh
-# 	scala-cli publish . --signer gpg --gpg-key 9D8EF0F74E5D78A3
+publish:
+	scala-cli config publish.credentials central.sonatype.com env:SONATYPE_USERNAME env:SONATYPE_PASSWORD
+	scala-cli config publish.credentials ossrh-staging-api.central.sonatype.com env:SONATYPE_USERNAME env:SONATYPE_PASSWORD
+	./.github/workflows/import-gpg.sh
+	scala-cli publish . --signer gpg --gpg-key 9D8EF0F74E5D78A3
