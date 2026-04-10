@@ -283,6 +283,7 @@
             // ancestry is the stack of ancestors for breadcrumb navigation.
             let currentNode = null;
             let ancestry = [];
+            let rootNode = null; // keep a reference to the tree root
 
             function getActiveData() {
                 const pfx = document
@@ -303,8 +304,46 @@
                 (tree.children || []).forEach(
                     (c, i) => (colorMap[c.name] = RAMPS[i % RAMPS.length]),
                 );
+                rootNode = tree;
                 currentNode = tree;
                 ancestry = [];
+            }
+
+            // Navigate to a node by its fullPath (dot-separated).
+            // Walks down the tree from root, building the ancestry stack.
+            function navigateToPath(path) {
+                if (!rootNode) return;
+                if (!path) {
+                    currentNode = rootNode;
+                    ancestry = [];
+                    return;
+                }
+                const parts = path.split(".");
+                let node = rootNode;
+                ancestry = [];
+                for (const part of parts) {
+                    const child = (node.children || []).find(
+                        (c) => c.name === part,
+                    );
+                    if (!child) break;
+                    ancestry.push(node);
+                    node = child;
+                }
+                currentNode = node;
+            }
+
+            function currentPath() {
+                return currentNode && currentNode.fullPath
+                    ? currentNode.fullPath
+                    : "";
+            }
+
+            function pushState() {
+                const path = currentPath();
+                const hash = path ? "#" + path : "";
+                if (window.location.hash !== hash) {
+                    history.pushState(null, "", hash || window.location.pathname);
+                }
             }
 
             function getColor(nodeName, depth, lightIdx) {
@@ -387,6 +426,7 @@
                         if (!d.data.hasChildren) return;
                         ancestry.push(currentNode);
                         currentNode = d.data._ref;
+                        pushState();
                         updateBreadcrumb();
                         render();
                     })
@@ -463,6 +503,7 @@
             window.navigateToAncestor = function (i) {
                 currentNode = ancestry[i];
                 ancestry = ancestry.slice(0, i);
+                pushState();
                 updateBreadcrumb();
                 render();
             };
@@ -474,8 +515,24 @@
             };
 
             rebuildRoot();
+
+            // Restore context from URL hash on initial load.
+            const initialHash = window.location.hash.replace(/^#/, "");
+            if (initialHash) {
+                navigateToPath(initialHash);
+                updateBreadcrumb();
+            }
+
             render();
             window.addEventListener("resize", render);
+
+            // Handle browser back/forward navigation.
+            window.addEventListener("popstate", function () {
+                const path = window.location.hash.replace(/^#/, "");
+                navigateToPath(path);
+                updateBreadcrumb();
+                render();
+            });
         </script>
     </body>
 </html>
