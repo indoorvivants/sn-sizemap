@@ -2,6 +2,29 @@ import scala.scalanative.build.SourceLevelDebuggingConfig
 import java.util.stream.Collectors
 import java.nio.file.Files
 import bindgen.interface.*
+
+
+inThisBuild(
+  Seq(
+    semanticdbIncludeInJar := false,
+    organization := "com.indoorvivants",
+    organizationName := "Anton Sviridov",
+    homepage := Some(url("https://github.com/indoorvivants/sn-sizemap")),
+    startYear := Some(2022),
+    licenses := List(
+      "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")
+    ),
+    developers := List(
+      Developer(
+        "keynmol",
+        "Anton Sviridov",
+        "velvetbaldmime@protonmail.com",
+        url("https://indoorvivants.com")
+      )
+    )
+  )
+)
+
 lazy val cli = project
   .in(file("cli"))
   .enablePlugins(ScalaNativePlugin, ForgeNativeBinaryPlugin, BindgenPlugin)
@@ -40,7 +63,7 @@ lazy val cli = project
 
       Files.walk(dist).toList.asScala.map(_.toFile).filter(_.isFile)
     },
-    serveItself := Def.taskDyn{
+    serveItself := Def.taskDyn {
       val binary = (Compile / nativeLink).value.toPath
       reStart.toTask(s" serve ${binary} --port 8899")
     }.value
