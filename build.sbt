@@ -3,7 +3,6 @@ import java.util.stream.Collectors
 import java.nio.file.Files
 import bindgen.interface.*
 
-
 inThisBuild(
   Seq(
     semanticdbIncludeInJar := false,
@@ -59,7 +58,7 @@ lazy val cli = project
     Compile / resourceGenerators += Def.task {
       import scala.jdk.CollectionConverters.*
 
-      val dist = (frontend / frontendRoot).value / "dist"
+      val dist = (ThisBuild / baseDirectory).value.toPath / "frontend" / "dist"
 
       Files.walk(dist).toList.asScala.map(_.toFile).filter(_.isFile)
     },
@@ -80,6 +79,6 @@ lazy val frontend = project
     libraryDependencies += "com.raquo" %%% "laminar" % "17.2.1",
     frontendPackages := Seq("sizemap"),
     reStartCommand := Seq("npm", "run", "dev"),
-    reStart / baseDirectory := frontendRoot.value.toFile,
+    reStart / baseDirectory := (ThisBuild / baseDirectory).value / "frontend",
     scalaVersion := "3.8.4"
   )
