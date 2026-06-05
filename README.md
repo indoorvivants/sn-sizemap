@@ -10,7 +10,7 @@ Starting server on http://localhost:52616
 
 When you navigate to the page, you will be greeted with an interactive dashboard allowing to drill down into the various packages and their sizes.
 
-<img width="2212" height="1226" alt="CleanShot 2026-06-05 at 12 53 22@2x" src="https://github.com/user-attachments/assets/6c1f32b2-5a14-4209-8b1e-ec0d015b8cf4" />
+<img width="2560" height="1578" alt="CleanShot 2026-06-05 at 20 46 16@2x" src="https://github.com/user-attachments/assets/0138d1f2-2f01-4b4b-bfbf-f51374745cf8" />
 
 
 At the moment, only MacOS and Linux  binaries are supported, to support Windows we need a brave volunteer.
