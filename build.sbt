@@ -1,3 +1,4 @@
+import com.indoorvivants.detective.Platform
 import scala.scalanative.build.SourceLevelDebuggingConfig
 import java.util.stream.Collectors
 import java.nio.file.Files
@@ -42,6 +43,12 @@ lazy val cli = project
         .withMultithreading(enabled = false)
         .withIncrementalCompilation(true)
         .withSourceLevelDebuggingConfig(SourceLevelDebuggingConfig.enabled)
+
+    },
+    nativeConfig ~= { c =>
+      if (Platform.os == Platform.OS.Linux)
+        c.withCompileOptions(_ :+ "-D_GNU_SOURCE")
+      else c
     },
     bindgenBindings += Binding(
       (Compile / resourceDirectory).value / "scala-native" / "httplib_glue.h",
@@ -86,4 +93,7 @@ lazy val frontend = project
 addCommandAlias("debugBuild", "frontendBuild; buildBinaryDebug")
 addCommandAlias("releaseBuild", "frontendBuild; buildBinaryRelease")
 addCommandAlias("debugPlatformBuild", "frontendBuild; buildBinaryPlatformDebug")
-addCommandAlias("releasePlatformBuild", "frontendBuild; buildBinaryPlatformRelease")
+addCommandAlias(
+  "releasePlatformBuild",
+  "frontendBuild; buildBinaryPlatformRelease"
+)
