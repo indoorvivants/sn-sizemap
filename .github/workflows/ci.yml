@@ -61,9 +61,7 @@ jobs:
 
       - uses: coursier/cache-action@v6
 
-      - uses: VirtusLab/scala-cli-setup@main
-        with:
-          power: true
+      - uses: sbt/setup-sbt@v1
 
       - name: Build the binary
         run: sbt 'frontendBuild; buildBinaryPlatformRelease'
@@ -94,9 +92,7 @@ jobs:
 
       - uses: coursier/cache-action@v6
 
-      - uses: VirtusLab/scala-cli-setup@main
-        with:
-          power: true
+      - uses: sbt/setup-sbt@v1
 
       - name: Build the binary
         run: sbt 'frontendBuild; buildBinaryPlatformRelease'
