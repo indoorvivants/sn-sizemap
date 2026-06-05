@@ -1,0 +1,36 @@
+package sizemap
+
+import scala.scalanative.unsafe.*
+
+object Captured:
+  def unsafe[D <: AnyRef: Tag](value: D): (Ptr[D], Memory) =
+    import scalanative.runtime.*, ffi.*
+
+    val rawptr = malloc(sizeof[D])
+    val mem = fromRawPtr[D](rawptr)
+    val deallocate: Memory =
+      () =>
+        GCRoots.removeRoot(value.asInstanceOf[Object])
+        free(toRawPtr[D](mem))
+
+    val originalAddress = Intrinsics.castObjectToRawPtr(value)
+
+    Intrinsics.storeObject(rawptr, value)
+
+    GCRoots.addRoot(value)
+
+    (mem, deallocate)
+  end unsafe
+
+  opaque type Memory = () => Unit
+  object Memory:
+    extension (f: Memory)
+      def deallocate() =
+        f()
+
+end Captured
+
+object GCRoots:
+  private val references = new java.util.IdentityHashMap[Object, Unit]
+  def addRoot(o: Object): Unit = references.put(o, ())
+  def removeRoot(o: Object): Unit = references.remove(o)
