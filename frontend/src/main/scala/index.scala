@@ -1,12 +1,20 @@
 package sizemap
 
-import org.scalajs.dom.*
+import org.scalajs.dom, dom.*
 import scalajs.js, js.annotation.*
 import scala.collection.mutable.ArrayBuffer
 import com.raquo.laminar.api.L.*
+import scala.util.boundary
 
 @js.native
-trait Sym extends js.Array[Any]
+trait Sym extends js.Array[js.Any]
+
+@js.native
+trait ServerData extends js.Object:
+  val binary: String = js.native
+  val sizeOnDisk: Int = js.native
+  val data: js.Array[Sym] = js.native
+end ServerData
 
 extension (s: Sym)
   def name = s.apply(0).asInstanceOf[String]
@@ -91,9 +99,6 @@ def buildTree(data: scala.scalajs.js.Array[Sym]) =
   root
 end buildTree
 
-// @js.native @JSImport("/data.json", JSImport.Default)
-// val jsonData: scala.scalajs.js.Array[Sym] = js.native
-
 def sideBySide(tree1: Tree.Node, tree2: Tree.Node) =
 
   enum Ior:
@@ -131,9 +136,26 @@ def sideBySide(tree1: Tree.Node, tree2: Tree.Node) =
   ???
 end sideBySide
 
-def singleBinary(tree: Tree.Node) =
+def treePathFromHash(root: Tree.Node, hash: String): List[Tree.Node] =
+  boundary:
+    val segments = hash.split("/")
+    var cur = List(root)
 
-  val current = Var(List(tree))
+    segments.foreach: seg =>
+      val found = cur.head.children.collectFirst:
+        case t: Tree.Node if t.label == seg =>
+          cur = t :: cur
+
+      if found.isEmpty then boundary.break(cur)
+
+    cur
+
+def singleBinary(name: String, sizeOnDisk: Int, tree: Tree.Node) =
+
+  val hash = window.location.hash.stripPrefix("#")
+  val default =
+    if hash.nonEmpty then treePathFromHash(tree, hash) else List(tree)
+  val current = Var(default)
 
   val drillDown = Observer[Tree.Node] { node =>
     current.update(node :: _)
@@ -148,11 +170,32 @@ def singleBinary(tree: Tree.Node) =
     current.update(t => t.drop(t.length - n))
   }
 
+  val trackHistory = Observer[List[Tree.Node]] { path =>
+    val rev =
+      dom.window.btoa(path.reverse.drop(1).map(_.label).mkString("/"))
+    console.log("Tracking history: " + rev)
+
+    if window.location.hash != "#" + rev then window.location.hash = "#" + rev
+  }
+
   div(
     div(
-      cls := "toolbar",
-      a("← back", cls := "btn-back", onClick.mapToUnit --> goBack),
-      b(s"${{ formatBytes(tree.size) }}", cls := "total-size")
+      cls := "binary-info",
+      span(cls := "binary-name", name),
+      div(
+        cls := "binary-stats",
+        span(
+          cls := "stat",
+          span(cls := "stat-label", "on disk"),
+          span(cls := "stat-value", formatBytes(sizeOnDisk))
+        ),
+        span(cls := "stat-sep", "·"),
+        span(
+          cls := "stat",
+          span(cls := "stat-label", "symbols"),
+          span(cls := "stat-value", formatBytes(tree.size))
+        )
+      )
     ),
     div(
       cls := "breadcrumb",
@@ -165,6 +208,12 @@ def singleBinary(tree: Tree.Node) =
           )
       }
     ),
+    current --> trackHistory,
+    windowEvents(_.onPopState)
+      .mapTo(window.location.hash.stripPrefix("#"))
+      .map(dom.window.atob(_))
+      .map(treePathFromHash(tree, _))
+      .debugSpy(s => console.log(s.map(_.map(_.label)))) --> current.writer,
     div(
       cls := "table",
       div("symbol", cls := "col-hdr col-name"),
@@ -172,7 +221,30 @@ def singleBinary(tree: Tree.Node) =
       div("relative size", cls := "col-hdr col-bar"),
       children <-- current.signal.map { t =>
         val parentSize = t.head.size.toFloat
-        t.head.children.sortBy(-1 * _.size).take(100).flatMap {
+        val (display, summarise) =
+          t.head.children.sortBy(-1 * _.size).splitAt(100)
+
+        val summary = Option
+          .when(summarise.nonEmpty):
+            val totalSize = summarise.map(_.size).sum
+            val pct = 100 * totalSize.toFloat / parentSize
+            List(
+              div(
+                s"${summarise.length} more symbols",
+                cls := "col-name cell-leaf"
+              ),
+              div(formatBytes(totalSize), cls := "col-size cell-node"),
+              div(
+                cls := "col-bar",
+                div(
+                  cls := "bar bar-node",
+                  styleAttr := s"width: ${pct}%;"
+                )
+              )
+            )
+          .toList
+          .flatten
+        val spittingBars = display.flatMap {
           case c @ Tree.Node(label, _) =>
             val pct = 100 * c.size.toFloat / parentSize
             List(
@@ -202,6 +274,8 @@ def singleBinary(tree: Tree.Node) =
               )
             )
         }
+
+        spittingBars ++ summary
       }
     )
   )
@@ -216,15 +290,19 @@ def formatBytes(bytes: Int) =
 
 @main def hello =
   val container = document.getElementById("content")
-  val base = org.scalajs.dom.window.location.href + "api/data"
+  val base =
+    org.scalajs.dom.window.location.href.takeWhile(_ != '#') + "api/data"
+
+  console.log(base)
 
   val app = div(
     child <-- FetchStream.raw
       .get(base)
       .flatMapSwitch(b => EventStream.fromJsPromise(b.json()))
-      .map(_.asInstanceOf[scala.scalajs.js.Array[Sym]])
-      .map(buildTree(_))
-      .map(singleBinary(_))
+      .map(_.asInstanceOf[ServerData])
+      .map(data =>
+        singleBinary(data.binary, data.sizeOnDisk, buildTree(data.data))
+      )
   )
 
   renderOnDomContentLoaded(container, app)
