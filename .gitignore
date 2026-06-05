@@ -9,3 +9,8 @@ out
 .mcp.json
 *.log
 raw.js
+
+**/target
+metals.sbt
+project/project
+project/target

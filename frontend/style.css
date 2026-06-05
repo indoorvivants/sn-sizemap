@@ -1,0 +1,221 @@
+:root {
+  --bg:        #f7f8fa;
+  --surface:   #ffffff;
+  --border:    #dde1e7;
+  --border-dim:#eef0f3;
+  --text:      #1a1d23;
+  --text-dim:  #666;
+  --text-muted:#999;
+  --accent:    #1a6fe8;
+  --header-bg: #f5f6f8;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 13px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-monospace, 'Menlo', 'Consolas', monospace;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── Page header ── */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+  user-select: none;
+}
+
+.wordmark-icon { color: var(--accent); }
+
+.header-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── Main ── */
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.btn-back {
+  cursor: pointer;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+.btn-back:hover {
+  background: var(--bg);
+  border-color: #bbb;
+}
+
+.total-size {
+  font-size: 12px;
+  font-weight: 500;
+  color: #444;
+  letter-spacing: 0.02em;
+}
+
+/* ── Breadcrumb ── */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  font-size: 12px;
+}
+
+.breadcrumb-item {
+  cursor: pointer;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 2px 8px;
+  position: relative;
+}
+.breadcrumb-item + .breadcrumb-item::before {
+  content: '/';
+  position: absolute;
+  left: -1px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.breadcrumb-item:last-child {
+  color: var(--accent);
+  font-weight: 500;
+}
+.breadcrumb-item:hover { color: var(--text); }
+
+/* ── Table ── */
+.table {
+  display: grid;
+  grid-template-columns: 1fr 80px 1fr;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+/* Column headers */
+.col-hdr {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Column layout */
+.col-name {
+  padding: 6px 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.col-hdr.col-name { padding: 5px 10px; }
+
+.col-size {
+  padding: 6px 4px 6px 0;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.col-hdr.col-size { padding: 5px 4px 5px 0; }
+
+.col-bar {
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+}
+.col-hdr.col-bar { padding: 5px 10px; display: block; }
+
+/* Data row cells */
+.col-name.cell-node,
+.col-size.cell-node,
+.col-bar:has(.bar-node) {
+  border-bottom: 1px solid var(--border-dim);
+}
+.col-name.cell-leaf,
+.col-size.cell-leaf,
+.col-bar:has(.bar-leaf) {
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.cell-node.col-name {
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 12px;
+}
+.cell-leaf.col-name {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.cell-node.col-size { color: var(--text-dim); font-size: 11px; }
+.cell-leaf.col-size { color: var(--text-muted); font-size: 11px; }
+
+/* Row hover */
+.col-name:hover,
+.col-name:hover + .col-size,
+.col-name:hover + .col-size + .col-bar {
+  background: #f0f4fb;
+}
+
+/* Bars */
+.bar {
+  height: 12px;
+  border-radius: 1px;
+  min-width: 2px;
+  cursor: default;
+}
+.bar-node { background: #4a90e2; cursor: pointer; }
+.bar-leaf { background: #b8d4f5; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+::selection { background: #d0e4ff; }
