@@ -1,4 +1,4 @@
-addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.11")
+addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.12")
 addSbtPlugin("com.indoorvivants" % "sbt-forge-vite-webapp" % "dev")
 addSbtPlugin("com.indoorvivants" % "sbt-forge-native-binary" % "dev")
 // for native projects 
