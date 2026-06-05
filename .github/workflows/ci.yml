@@ -27,14 +27,14 @@ jobs:
 
       - name: Publish snapshot
         if: github.ref == 'refs/heads/main'
-        run: make publish-snapshot
+        run: sbt ci-release
         env:
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
 
       - name: Publish
         if: startsWith(github.ref, 'refs/tags/v')
-        run: make publish
+        run: sbt ci-release
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
@@ -66,8 +66,7 @@ jobs:
           power: true
 
       - name: Build the binary
-        run: |
-          make platform-bin
+        run: sbt 'frontendBuild; buildBinaryPlatformRelease'
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -100,7 +99,7 @@ jobs:
           power: true
 
       - name: Build the binary
-        run: make platform-bin
+        run: sbt 'frontendBuild; buildBinaryPlatformRelease'
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

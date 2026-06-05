@@ -22,7 +22,6 @@ enum CLI(val path: Path) derives CommandApplication:
 end CLI
 
 @main def hello(args: String*) =
-  println(args)
   val cli = CommandApplication.parseOrExit[CLI](args)
 
   val file = cli.path.toFile()
