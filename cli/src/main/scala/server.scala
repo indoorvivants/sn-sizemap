@@ -5,16 +5,18 @@ import scalanative.unsigned.*
 import scala.util.control.NonFatal
 import scalanative.libc.string.*
 
-class Server(filename: String, data: Map[String, Long]):
+class Server(filename: String, sizeOnDisk: Long, data: Map[String, Long]):
   def serve(port: Option[Int])(using Zone) =
     // val handlers = Handlers()
 
     val dataJS =
       val serialised = data.toList.sortBy(s => (s._2 * -1, s._1))
-      toCString(
-        serialised
+      val symbols =         serialised
           .map { case (k, v) => s"""["$k", $v]""" }
-          .mkString("[\n", ", \n", "\n]")
+          .mkString("[", ",", "]")
+
+      toCString(
+        s"""{"binary": "$filename", "sizeOnDisk": $sizeOnDisk, "data": $symbols}"""
       )
     end dataJS
 

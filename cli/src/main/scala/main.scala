@@ -11,6 +11,7 @@ import scala.util.Try
 import java.io.FileWriter
 import scala.util.Using
 import scala.scalanative.unsafe.Zone
+import java.nio.file.Files
 
 enum CLI(val path: Path) derives CommandApplication:
   case Serve(
@@ -24,7 +25,9 @@ end CLI
 @main def hello(args: String*) =
   val cli = CommandApplication.parseOrExit[CLI](args)
 
+
   val file = cli.path.toFile()
+  val sizeOnDisk = Files.size(cli.path)
   implicit val bf: BinaryFile = new BinaryFile(
     new RandomAccessFile(file, "r")
   )
@@ -71,5 +74,5 @@ end CLI
   cli match
     case CLI.Serve(filename, port) =>
       Zone:
-        Server(filename.getFileName().toString, indiv.toMap).serve(port)
+        Server(filename.getFileName().toString, sizeOnDisk, indiv.toMap).serve(port)
 end hello

@@ -53,11 +53,22 @@ header {
 .wordmark-icon { color: var(--accent); }
 
 .header-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 11px;
-  color: var(--text-muted);
+  color: #555;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
+
+.github-link {
+  display: flex;
+  align-items: center;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+.github-link:hover { opacity: 1; }
 
 /* ── Main ── */
 main {
@@ -98,13 +109,60 @@ main {
   letter-spacing: 0.02em;
 }
 
+/* ── Binary info bar ── */
+.binary-info {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 14px 0 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+.binary-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.binary-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.stat-sep {
+  color: var(--border);
+  font-size: 14px;
+}
+
 /* ── Breadcrumb ── */
 .breadcrumb {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   margin-bottom: 16px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .breadcrumb-item {
