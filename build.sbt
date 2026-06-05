@@ -82,3 +82,8 @@ lazy val frontend = project
     reStart / baseDirectory := (ThisBuild / baseDirectory).value / "frontend",
     scalaVersion := "3.8.4"
   )
+
+addCommandAlias("debugBuild", "frontendBuild; buildBinaryDebug")
+addCommandAlias("releaseBuild", "frontendBuild; buildBinaryRelease")
+addCommandAlias("debugPlatformBuild", "frontendBuild; buildBinaryPlatformDebug")
+addCommandAlias("releasePlatformBuild", "frontendBuild; buildBinaryPlatformRelease")
