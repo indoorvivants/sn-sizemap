@@ -43,6 +43,12 @@ lazy val cli = project
         .withMultithreading(enabled = false)
         .withIncrementalCompilation(true)
         .withSourceLevelDebuggingConfig(SourceLevelDebuggingConfig.enabled)
+        .withResourceExcludePatterns(Seq("**/*.proto", "*.proto"))
+    },
+    nativeLinkReleaseFast / nativeConfig ~= {
+      _.withLinkingOptions(_ :+ "-lstdc++")
+        .withEmbedResources(true)
+        .withMultithreading(enabled = false)
 
     },
     nativeConfig ~= { c =>

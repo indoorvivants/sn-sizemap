@@ -109,6 +109,8 @@ object MachO:
                     .get(prev.n_un.toInt)
                     .foreach: name =>
                       sizes += name -> size
+                case other :: Nil => 
+                  scribe.info(other.toString)
 
             sorted.lastOption.foreach: last =>
               val size = section.offset + section.size - last.n_value
