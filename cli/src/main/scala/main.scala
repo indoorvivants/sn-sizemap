@@ -22,9 +22,10 @@ enum CLI(val path: Path) derives CommandApplication:
   ) extends CLI(filename)
 end CLI
 
+case class Sym(value: String, demangledFrom: String)
+
 @main def hello(args: String*) =
   val cli = CommandApplication.parseOrExit[CLI](args)
-
 
   val file = cli.path.toFile()
   val sizeOnDisk = Files.size(cli.path)
@@ -36,7 +37,7 @@ end CLI
 
   val ftype = FileType.detect(bf)
 
-  def demangled(sizes: Map[String, Long]): Map[String, Long] =
+  def demangled(sizes: Map[String, Long]): Map[Sym, Long] =
     sizes
       .filter(_._2 > 0)
       .map: (name, size) =>
@@ -45,21 +46,21 @@ end CLI
           Try(Demangler.demangle(stripped)).fold(
             _ =>
               scribe.warn(s"Failed to demangle symbol ${stripped}")
-              (name, size)
+              Sym(name, "unknown") -> size
             ,
-            s => (s, size)
+            s => Sym(s, "scala") -> size
           )
         else if name.startsWith("_S") && ftype == FileType.ELF then
           Try(Demangler.demangle(name)).fold(
             _ =>
               scribe.warn(s"Failed to demangle symbol ${name}")
-              (name, size)
+              Sym(name, "unknown") -> size
             ,
-            s => (s, size)
+            s => Sym(s, "scala") -> size
           )
         else if name.startsWith("_Z") || name.startsWith("__Z") then
-          (s"<C++>.$name", size)
-        else ("<C>." + name, size)
+          (Sym(s"<C++>.$name", "cpp"), size)
+        else (Sym("<C>." + name, "c"), size)
 
   val indiv =
     demangled(
@@ -74,5 +75,7 @@ end CLI
   cli match
     case CLI.Serve(filename, port) =>
       Zone:
-        Server(filename.getFileName().toString, sizeOnDisk, indiv.toMap).serve(port)
+        Server(filename.getFileName().toString, sizeOnDisk, indiv.toMap)
+          .serve(port)
+  end match
 end hello
