@@ -160,9 +160,9 @@ def sideBySide(tree1: Tree.Node, tree2: Tree.Node) =
   ???
 end sideBySide
 
-def treePathFromHash(root: Tree.Node, hash: String): List[Tree.Node] =
+def treePathFromPath(root: Tree.Node, path: String): List[Tree.Node] =
   boundary:
-    val segments = hash.split("/")
+    val segments = path.split("/")
     var cur = List(root)
 
     segments.foreach: seg =>
@@ -197,8 +197,11 @@ end langIcon
 def singleBinary(name: String, sizeOnDisk: Int, tree: Tree.Node) =
 
   val hash = window.location.hash.stripPrefix("#")
+  val path = dom.window.atob(hash)
   val default =
-    if hash.nonEmpty then treePathFromHash(tree, hash) else List(tree)
+    if hash.nonEmpty then treePathFromPath(tree, path) else List(tree)
+
+  println(hash)
   val current = Var(default)
 
   val drillDown = Observer[Tree.Node] { node =>
@@ -256,7 +259,7 @@ def singleBinary(name: String, sizeOnDisk: Int, tree: Tree.Node) =
     windowEvents(_.onPopState)
       .mapTo(window.location.hash.stripPrefix("#"))
       .map(dom.window.atob(_))
-      .map(treePathFromHash(tree, _))
+      .map(treePathFromPath(tree, _))
       .debugSpy(s => console.log(s.map(_.map(_.label)))) --> current.writer,
     div(
       cls := "table",
