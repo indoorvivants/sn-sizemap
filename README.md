@@ -1,17 +1,17 @@
-# Break down the size of a Scala Native binary
+# Break down the size of a native binary
 
-
-**Installation**: download the binary for your system from [Releases](https://github.com/indoorvivants/sn-sizer/releases/latest)
+**Installation methods**: 
+- download the binary for your system from [Releases](https://github.com/indoorvivants/sn-sizemap/releases/latest)
+- use [coursier](https://get-coursier.io/): `cs install sn-sizemap --contrib`
 
 ```
-$ sn-sizer serve test-binary
+$ sn-sizemap serve test-binary
 Starting server on http://localhost:52616
 ```
 
 When you navigate to the page, you will be greeted with an interactive dashboard allowing to drill down into the various packages and their sizes.
 
-<img width="2560" height="1578" alt="CleanShot 2026-06-05 at 20 46 16@2x" src="https://github.com/user-attachments/assets/0138d1f2-2f01-4b4b-bfbf-f51374745cf8" />
-
+<img width="2342" height="1462" alt="CleanShot 2026-06-17 at 11 19 38@2x" src="https://github.com/user-attachments/assets/abd993be-e4cd-4443-9c6e-6912f7bef4f5" />
 
 At the moment, only MacOS and Linux  binaries are supported, to support Windows we need a brave volunteer.
 
